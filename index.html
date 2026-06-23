@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Estoque do Parceiro</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #22263a;
+    --border: #2e3248;
+    --accent: #4f8ef7;
+    --accent-dim: rgba(79,142,247,0.12);
+    --green: #3ecf8e;
+    --green-dim: rgba(62,207,142,0.12);
+    --red: #f76f6f;
+    --red-dim: rgba(247,111,111,0.12);
+    --yellow: #f7c94f;
+    --yellow-dim: rgba(247,201,79,0.12);
+    --text: #e8eaf0;
+    --text2: #8891aa;
+    --text3: #555d7a;
+    --font: 'Inter', sans-serif;
+    --mono: 'JetBrains Mono', monospace;
+    --radius: 10px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    min-height: 100vh;
+    font-size: 14px;
+  }
+
+  /* HEADER */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .logo { font-size: 16px; font-weight: 600; letter-spacing: -0.3px; }
+  .logo span { color: var(--accent); }
+  .sync-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--green); display: inline-block; margin-right: 6px;
+    animation: pulse 2s infinite;
+  }
+  .sync-dot.off { background: var(--text3); animation: none; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+  .sync-label { font-size: 12px; color: var(--text2); }
+
+  /* LAYOUT */
+  .app { display: flex; min-height: calc(100vh - 57px); }
+
+  /* SIDEBAR */
+  nav {
+    width: 200px;
+    min-width: 200px;
+    border-right: 1px solid var(--border);
+    padding: 20px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    background: var(--surface);
+  }
+  nav .nav-label { font-size: 11px; color: var(--text3); font-weight: 500; letter-spacing: .08em; text-transform: uppercase; padding: 0 8px; margin-bottom: 4px; margin-top: 12px; }
+  nav .nav-label:first-child { margin-top: 0; }
+  nav button {
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: none;
+    padding: 9px 12px;
+    border-radius: 8px;
+    color: var(--text2);
+    font-size: 13.5px;
+    font-family: var(--font);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: all .15s;
+  }
+  nav button:hover { background: var(--surface2); color: var(--text); }
+  nav button.active { background: var(--accent-dim); color: var(--accent); font-weight: 500; }
+
+  /* MAIN */
+  main { flex: 1; padding: 28px; overflow-y: auto; max-width: 900px; }
+  .page { display: none; }
+  .page.active { display: block; }
+
+  h1 { font-size: 20px; font-weight: 600; margin-bottom: 4px; }
+  .subtitle { color: var(--text2); font-size: 13px; margin-bottom: 24px; }
+
+  /* CARDS */
+  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 14px; margin-bottom: 28px; }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+  }
+  .card .card-label { font-size: 11px; color: var(--text2); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 10px; }
+  .card .card-val { font-size: 24px; font-weight: 600; font-family: var(--mono); letter-spacing: -1px; }
+  .card .card-val.green { color: var(--green); }
+  .card .card-val.accent { color: var(--accent); }
+
+  /* TABLE */
+  .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  table { width: 100%; border-collapse: collapse; }
+  thead th {
+    text-align: left;
+    padding: 11px 16px;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+  }
+  tbody td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+    font-size: 13.5px;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover td { background: var(--surface2); }
+  .mono { font-family: var(--mono); font-size: 13px; }
+
+  /* BADGES */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 9px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 500;
+  }
+  .badge.ok { background: var(--green-dim); color: var(--green); }
+  .badge.low { background: var(--yellow-dim); color: var(--yellow); }
+  .badge.out { background: var(--red-dim); color: var(--red); }
+
+  /* FORM */
+  .form-block { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; max-width: 560px; }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .form-grid.full { grid-template-columns: 1fr; }
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  label { font-size: 12px; color: var(--text2); font-weight: 500; }
+  input, select {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 9px 12px;
+    color: var(--text);
+    font-size: 14px;
+    font-family: var(--font);
+    outline: none;
+    transition: border-color .15s;
+  }
+  input:focus, select:focus { border-color: var(--accent); }
+  select option { background: var(--surface2); }
+
+  .preview-lucro {
+    font-size: 13px;
+    color: var(--green);
+    font-family: var(--mono);
+    padding: 10px 12px;
+    background: var(--green-dim);
+    border-radius: 8px;
+    margin-top: 4px;
+  }
+
+  /* BUTTONS */
+  .btn-row { display: flex; gap: 10px; margin-top: 20px; }
+  .btn {
+    padding: 9px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: var(--font);
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--text);
+    transition: all .15s;
+  }
+  .btn:hover { background: var(--border); }
+  .btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .btn.primary:hover { opacity: .88; }
+  .btn.danger { background: var(--red-dim); color: var(--red); border-color: transparent; font-size: 12px; padding: 5px 10px; }
+
+  /* TOAST */
+  #toast {
+    position: fixed;
+    bottom: 28px;
+    right: 28px;
+    padding: 13px 20px;
+    border-radius: 10px;
+    font-size: 13.5px;
+    font-weight: 500;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .25s;
+    z-index: 100;
+    max-width: 320px;
+  }
+  #toast.show { opacity: 1; }
+  #toast.ok { background: var(--green); color: #0a1f14; }
+  #toast.err { background: var(--red); color: #2a0a0a; }
+
+  /* EMPTY */
+  .empty { text-align: center; padding: 48px 24px; color: var(--text3); }
+  .empty .icon { font-size: 32px; margin-bottom: 10px; }
+  .empty p { font-size: 14px; }
+
+  /* VENDA FORM */
+  .venda-row { display: flex; gap: 12px; align-items: flex-end; }
+  .venda-row .field { flex: 1; }
+  .venda-row .field.sm { max-width: 120px; }
+  .info-box {
+    font-size: 13px;
+    color: var(--text2);
+    background: var(--surface2);
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin-top: 12px;
+    display: flex;
+    gap: 20px;
+  }
+  .info-box span { color: var(--text); font-family: var(--mono); }
+
+  /* RESPONSIVE */
+  @media (max-width: 640px) {
+    nav { width: 56px; min-width: 56px; padding: 12px 8px; }
+    nav .nav-label, nav button span { display: none; }
+    nav button { justify-content: center; padding: 10px; }
+    main { padding: 16px; }
+    .cards { grid-template-columns: 1fr 1fr; }
+    .form-grid { grid-template-columns: 1fr; }
+    .venda-row { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">estoque<span>.</span>parceiro</div>
+  <div>
+    <span class="sync-dot off" id="syncDot"></span>
+    <span class="sync-label" id="syncLabel">Conectando...</span>
+  </div>
+</header>
+
+<div class="app">
+  <nav>
+    <span class="nav-label">Menu</span>
+    <button class="active" onclick="goTo('resumo',this)">📊 <span>Resumo</span></button>
+    <button onclick="goTo('estoque',this)">📦 <span>Estoque</span></button>
+    <button onclick="goTo('venda',this)">💸 <span>Registrar venda</span></button>
+    <button onclick="goTo('addpeca',this)">➕ <span>Adicionar peça</span></button>
+    <button onclick="goTo('historico',this)">📋 <span>Histórico</span></button>
+    <button onclick="goTo('taxas',this)">⚙️ <span>Taxas ML</span></button>
+  </nav>
+
+  <main>
+
+    <!-- RESUMO -->
+    <div id="page-resumo" class="page active">
+      <h1>Resumo</h1>
+      <p class="subtitle">Visão geral do estoque do parceiro em tempo real.</p>
+      <div class="cards">
+        <div class="card"><div class="card-label">Peças em estoque</div><div class="card-val accent" id="c-qtd">—</div></div>
+        <div class="card"><div class="card-label">Custo total</div><div class="card-val" id="c-custo">—</div></div>
+        <div class="card"><div class="card-label">Valor de venda</div><div class="card-val" id="c-venda">—</div></div>
+        <div class="card"><div class="card-label">Lucro potencial</div><div class="card-val green" id="c-lucro">—</div></div>
+        <div class="card"><div class="card-label">Itens vendidos</div><div class="card-val" id="c-vitens">—</div></div>
+        <div class="card"><div class="card-label">Lucro realizado</div><div class="card-val green" id="c-vlucro">—</div></div>
+      </div>
+      <h2 style="font-size:15px;font-weight:600;margin-bottom:12px;">⚠️ Estoque crítico</h2>
+      <div id="critico-wrap"></div>
+    </div>
+
+    <!-- ESTOQUE -->
+    <div id="page-estoque" class="page">
+      <h1>Estoque</h1>
+      <p class="subtitle">Todas as peças cadastradas do parceiro.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Peça</th><th>Qtd</th><th>Custo unit.</th><th>Venda unit.</th><th>Lucro unit.</th><th>Margem</th><th>Status</th><th></th></tr></thead>
+          <tbody id="tbody-est"><tr><td colspan="8"><div class="empty"><div class="icon">📦</div><p>Nenhuma peça cadastrada.</p></div></td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- VENDA -->
+    <div id="page-venda" class="page">
+      <h1>Registrar venda</h1>
+      <p class="subtitle">Preencha os dados da venda manualmente. O estoque é baixado automaticamente.</p>
+      <div class="form-block">
+        <div class="form-grid full" style="margin-bottom:16px">
+          <div class="field">
+            <label>Peça</label>
+            <select id="sel-peca" onchange="atualizarInfoVenda()">
+              <option value="">Selecione uma peça...</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-grid" style="margin-bottom:16px">
+          <div class="field">
+            <label>Quantidade vendida</label>
+            <input type="number" id="v-qtd" min="1" value="1" oninput="atualizarInfoVenda()">
+          </div>
+          <div class="field">
+            <label>Valor recebido (R$)</label>
+            <input type="number" id="v-receita" step="0.01" placeholder="0,00" oninput="calcLucroVenda()">
+          </div>
+          <div class="field">
+            <label>Custo total pago (R$)</label>
+            <input type="number" id="v-custo" step="0.01" placeholder="0,00" oninput="calcLucroVenda()">
+          </div>
+          <div class="field">
+            <label>Lucro desta venda (R$)</label>
+            <input type="number" id="v-lucro" step="0.01" placeholder="Calculado automaticamente ou edite">
+          </div>
+        </div>
+        <div id="venda-info" style="display:none" class="info-box">
+          Estoque atual: <span id="vi-estoque">—</span>
+          &nbsp;·&nbsp; Custo unit. cadastrado: <span id="vi-custo-unit">—</span>
+        </div>
+        <div id="lucro-venda-prev" style="display:none" class="preview-lucro" id="lucro-venda-prev"></div>
+        <div class="btn-row">
+          <button class="btn primary" onclick="registrarVenda()">Confirmar venda</button>
+          <button class="btn" onclick="limparVenda()">Limpar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ADICIONAR PEÇA -->
+    <div id="page-addpeca" class="page">
+      <h1>Adicionar peça</h1>
+      <p class="subtitle">Cadastre uma nova peça no estoque do parceiro.</p>
+      <div class="form-block">
+        <div class="form-grid full" style="margin-bottom:16px">
+          <div class="field"><label>Nome da peça</label><input type="text" id="p-nome" placeholder="Ex: Rolamento 6201"></div>
+        </div>
+        <div class="form-grid" style="margin-bottom:16px">
+          <div class="field"><label>Quantidade inicial</label><input type="number" id="p-qtd" min="0" value="0"></div>
+          <div class="field"><label>Qtd mínima (alerta)</label><input type="number" id="p-min" min="0" value="2"></div>
+          <div class="field"><label>Preço de custo (R$)</label><input type="number" id="p-custo" step="0.01" placeholder="0,00" oninput="calcLucro()"></div>
+          <div class="field"><label>Preço de venda (R$)</label><input type="number" id="p-venda" step="0.01" placeholder="0,00" oninput="calcLucro()"></div>
+        </div>
+        <div id="lucro-prev" style="display:none" class="preview-lucro"></div>
+        <div class="btn-row">
+          <button class="btn primary" onclick="adicionarPeca()">Salvar peça</button>
+          <button class="btn" onclick="limparForm()">Limpar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- HISTÓRICO -->
+    <div id="page-historico" class="page">
+      <h1>Histórico de vendas</h1>
+      <p class="subtitle">Últimas 100 vendas registradas.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Data / Hora</th><th>Peça</th><th>Qtd</th><th>Custo</th><th>Receita</th><th>Lucro</th></tr></thead>
+          <tbody id="tbody-hist"><tr><td colspan="6"><div class="empty"><div class="icon">📋</div><p>Nenhuma venda registrada.</p></div></td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TAXAS ML -->
+    <div id="page-taxas" class="page">
+      <h1>Taxas do Mercado Livre</h1>
+      <p class="subtitle">Configure as taxas para calcular o lucro real de cada venda.</p>
+
+      <div class="form-block" style="max-width:640px">
+        <h2 style="font-size:14px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:16px">Taxas aplicadas pelo ML</h2>
+        <div class="form-grid" style="margin-bottom:20px">
+          <div class="field">
+            <label>Taxa por categoria (%)</label>
+            <input type="number" id="tx-categoria" step="0.1" placeholder="Ex: 14" oninput="salvarTaxas()">
+            <span style="font-size:11px;color:var(--text3);margin-top:4px">Comissão do ML sobre o valor de venda</span>
+          </div>
+          <div class="field">
+            <label>Custo fixo por venda (R$)</label>
+            <input type="number" id="tx-fixo" step="0.01" placeholder="Ex: 6.00" oninput="salvarTaxas()">
+            <span style="font-size:11px;color:var(--text3);margin-top:4px">Taxa fixa cobrada por unidade vendida</span>
+          </div>
+          <div class="field">
+            <label>Frete subsidiado pelo ML (R$)</label>
+            <input type="number" id="tx-frete" step="0.01" placeholder="Ex: 15.00" oninput="salvarTaxas()">
+            <span style="font-size:11px;color:var(--text3);margin-top:4px">Desconto que o ML aplica no seu repasse</span>
+          </div>
+          <div class="field">
+            <label>Lucro desejado por venda (%)</label>
+            <input type="number" id="tx-lucrodesejado" step="0.1" placeholder="Ex: 20" oninput="salvarTaxas()">
+            <span style="font-size:11px;color:var(--text3);margin-top:4px">Meta de margem sobre o custo do produto</span>
+          </div>
+        </div>
+
+        <div style="border-top:1px solid var(--border);padding-top:20px;margin-bottom:20px">
+          <h2 style="font-size:14px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:16px">Simulador de preço</h2>
+          <div class="form-grid">
+            <div class="field">
+              <label>Custo do produto (R$)</label>
+              <input type="number" id="sim-custo" step="0.01" placeholder="0,00" oninput="simular()">
+            </div>
+            <div class="field">
+              <label>Preço de venda no ML (R$)</label>
+              <input type="number" id="sim-venda" step="0.01" placeholder="0,00" oninput="simular()">
+            </div>
+          </div>
+          <div id="sim-resultado" style="display:none;margin-top:16px">
+            <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:16px;display:grid;grid-template-columns:1fr 1fr;gap:12px">
+              <div>
+                <div style="font-size:11px;color:var(--text3);margin-bottom:4px">Taxa do ML (categoria)</div>
+                <div class="mono" id="sr-taxa-cat" style="color:var(--red)">—</div>
+              </div>
+              <div>
+                <div style="font-size:11px;color:var(--text3);margin-bottom:4px">Custo fixo ML</div>
+                <div class="mono" id="sr-fixo" style="color:var(--red)">—</div>
+              </div>
+              <div>
+                <div style="font-size:11px;color:var(--text3);margin-bottom:4px">Frete subsidiado</div>
+                <div class="mono" id="sr-frete" style="color:var(--red)">—</div>
+              </div>
+              <div>
+                <div style="font-size:11px;color:var(--text3);margin-bottom:4px">Total de taxas</div>
+                <div class="mono" id="sr-total-taxas" style="color:var(--red)">—</div>
+              </div>
+              <div>
+                <div style="font-size:11px;color:var(--text3);margin-bottom:4px">Valor líquido recebido</div>
+                <div class="mono" id="sr-liquido" style="color:var(--accent)">—</div>
+              </div>
+              <div>
+                <div style="font-size:11px;color:var(--text3);margin-bottom:4px">Lucro real</div>
+                <div class="mono" id="sr-lucro" style="font-size:18px;font-weight:600">—</div>
+              </div>
+            </div>
+            <div id="sr-meta" style="margin-top:10px;font-size:13px;padding:10px 14px;border-radius:8px;display:none"></div>
+            <div id="sr-preco-ideal" style="margin-top:10px;font-size:13px;color:var(--text2)"></div>
+          </div>
+        </div>
+
+        <div style="font-size:12px;color:var(--text3);border-top:1px solid var(--border);padding-top:14px">
+          💾 As taxas são salvas automaticamente e sincronizadas com seu parceiro.
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<div id="toast"></div>
+
+<!-- FIREBASE SDK -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, addDoc, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDFkQN-H2PKXXFnckqmjAWp906qCC-J6eg",
+  authDomain: "sistema-de-organizacao.firebaseapp.com",
+  projectId: "sistema-de-organizacao",
+  storageBucket: "sistema-de-organizacao.firebasestorage.app",
+  messagingSenderId: "635495844077",
+  appId: "1:635495844077:web:c2cf45bfe2a5223bbde4e4"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+// ——— estado local ———
+let pecas = {};
+let vendas = [];
+
+// ——— helpers ———
+const BRL = v => 'R$ ' + Number(v).toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g,  '.');
+
+function toast(msg, tipo = 'ok') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'show ' + tipo;
+  clearTimeout(window._toastTimer);
+  window._toastTimer = setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+function goTo(page, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  btn.classList.add('active');
+  if (page === 'venda') atualizarSelect();
+}
+window.goTo = goTo;
+
+// ——— sincronização em tempo real ———
+onSnapshot(collection(db, 'pecas'), snap => {
+  pecas = {};
+  snap.forEach(d => pecas[d.id] = { id: d.id, ...d.data() });
+  renderEstoque();
+  renderResumo();
+  setSynced(true);
+});
+
+const qVendas = query(collection(db, 'vendas'), orderBy('ts', 'desc'), limit(100));
+onSnapshot(qVendas, snap => {
+  vendas = [];
+  snap.forEach(d => vendas.push({ id: d.id, ...d.data() }));
+  renderHistorico();
+  renderResumo();
+});
+
+function setSynced(ok) {
+  document.getElementById('syncDot').className = 'sync-dot' + (ok ? '' : ' off');
+  document.getElementById('syncLabel').textContent = ok ? 'Sincronizado' : 'Reconectando...';
+}
+
+// ——— RESUMO ———
+function renderResumo() {
+  const lista = Object.values(pecas);
+  let qtdT = 0, custoT = 0, vendaT = 0;
+  lista.forEach(p => { qtdT += p.qtd; custoT += p.qtd * p.custo; vendaT += p.qtd * p.venda; });
+  let lucroV = 0, itensV = 0;
+  vendas.forEach(v => { lucroV += v.lucro; itensV += v.qtd; });
+
+  document.getElementById('c-qtd').textContent = qtdT;
+  document.getElementById('c-custo').textContent = BRL(custoT);
+  document.getElementById('c-venda').textContent = BRL(vendaT);
+  document.getElementById('c-lucro').textContent = BRL(vendaT - custoT);
+  document.getElementById('c-vitens').textContent = itensV;
+  document.getElementById('c-vlucro').textContent = BRL(lucroV);
+
+  const criticos = lista.filter(p => p.qtd <= p.min);
+  const wrap = document.getElementById('critico-wrap');
+  if (!criticos.length) {
+    wrap.innerHTML = '<div class="empty"><div class="icon">✅</div><p>Nenhuma peça em nível crítico.</p></div>';
+    return;
+  }
+  wrap.innerHTML = `<div class="table-wrap"><table>
+    <thead><tr><th>Peça</th><th>Qtd atual</th><th>Mínimo</th><th>Status</th></tr></thead>
+    <tbody>${criticos.map(p => `<tr>
+      <td><strong>${p.nome}</strong></td>
+      <td class="mono">${p.qtd}</td>
+      <td class="mono">${p.min}</td>
+      <td><span class="badge ${p.qtd === 0 ? 'out' : 'low'}">${p.qtd === 0 ? '● Esgotado' : '● Estoque baixo'}</span></td>
+    </tr>`).join('')}
+    </tbody></table></div>`;
+}
+
+// ——— ESTOQUE ———
+function renderEstoque() {
+  const lista = Object.values(pecas);
+  const tbody = document.getElementById('tbody-est');
+  if (!lista.length) {
+    tbody.innerHTML = '<tr><td colspan="8"><div class="empty"><div class="icon">📦</div><p>Nenhuma peça cadastrada.</p></div></td></tr>';
+    return;
+  }
+  tbody.innerHTML = lista.map(p => {
+    const lucro = p.venda - p.custo;
+    const margem = p.custo > 0 ? ((lucro / p.custo) * 100).toFixed(0) + '%' : '—';
+    const s = p.qtd === 0 ? 'out' : p.qtd <= p.min ? 'low' : 'ok';
+    const sl = p.qtd === 0 ? '● Esgotado' : p.qtd <= p.min ? '● Baixo' : '● OK';
+    return `<tr>
+      <td><strong>${p.nome}</strong></td>
+      <td class="mono">${p.qtd}</td>
+      <td class="mono">${BRL(p.custo)}</td>
+      <td class="mono">${BRL(p.venda)}</td>
+      <td class="mono" style="color:var(--green)">${BRL(lucro)}</td>
+      <td class="mono">${margem}</td>
+      <td><span class="badge ${s}">${sl}</span></td>
+      <td><button class="btn danger" onclick="deletarPeca('${p.id}','${p.nome}')">remover</button></td>
+    </tr>`;
+  }).join('');
+}
+
+// ——— HISTÓRICO ———
+function renderHistorico() {
+  const tbody = document.getElementById('tbody-hist');
+  if (!vendas.length) {
+    tbody.innerHTML = '<tr><td colspan="6"><div class="empty"><div class="icon">📋</div><p>Nenhuma venda registrada.</p></div></td></tr>';
+    return;
+  }
+  tbody.innerHTML = vendas.map(v => `<tr>
+    <td style="color:var(--text2);font-size:12px">${v.data}</td>
+    <td>${v.peca}</td>
+    <td class="mono">${v.qtd}</td>
+    <td class="mono">${BRL(v.custo)}</td>
+    <td class="mono">${BRL(v.receita)}</td>
+    <td class="mono" style="color:var(--green)">${BRL(v.lucro)}</td>
+  </tr>`).join('');
+}
+
+// ——— SELECT DE VENDA ———
+function atualizarSelect() {
+  const s = document.getElementById('sel-peca');
+  const cur = s.value;
+  s.innerHTML = '<option value="">Selecione uma peça...</option>' +
+    Object.values(pecas).filter(p => p.qtd > 0)
+      .map(p => `<option value="${p.id}" ${p.id === cur ? 'selected' : ''}>${p.nome} (${p.qtd} unid.)</option>`).join('');
+  atualizarInfoVenda();
+}
+window.atualizarSelect = atualizarSelect;
+
+window.atualizarInfoVenda = function() {
+  const id = document.getElementById('sel-peca').value;
+  const qtd = parseInt(document.getElementById('v-qtd').value) || 1;
+  const box = document.getElementById('venda-info');
+  if (!id || !pecas[id]) { box.style.display = 'none'; return; }
+  const p = pecas[id];
+  box.style.display = 'flex';
+  document.getElementById('vi-estoque').textContent = p.qtd + ' unid.';
+  document.getElementById('vi-custo-unit').textContent = BRL(p.custo);
+  // preenche custo total sugerido
+  const custoInput = document.getElementById('v-custo');
+  if (!custoInput.value) custoInput.value = (p.custo * qtd).toFixed(2);
+  calcLucroVenda();
+};
+
+window.calcLucroVenda = function() {
+  const receita = parseFloat(document.getElementById('v-receita').value) || 0;
+  const custo = parseFloat(document.getElementById('v-custo').value) || 0;
+  const lucroInput = document.getElementById('v-lucro');
+  const prev = document.getElementById('lucro-venda-prev');
+  if (receita && custo) {
+    const l = receita - custo;
+    lucroInput.value = l.toFixed(2);
+    prev.style.display = 'block';
+    prev.textContent = `Lucro calculado: ${BRL(l)}  |  Margem: ${custo > 0 ? ((l/custo)*100).toFixed(1) : 0}%`;
+    prev.style.color = l >= 0 ? 'var(--green)' : 'var(--red)';
+  } else {
+    prev.style.display = 'none';
+  }
+};
+
+// ——— REGISTRAR VENDA ———
+window.registrarVenda = async function() {
+  const id = document.getElementById('sel-peca').value;
+  const qtd = parseInt(document.getElementById('v-qtd').value) || 1;
+  const receita = parseFloat(document.getElementById('v-receita').value);
+  const custo = parseFloat(document.getElementById('v-custo').value);
+  const lucro = parseFloat(document.getElementById('v-lucro').value);
+
+  if (!id) return toast('Selecione uma peça.', 'err');
+  const p = pecas[id];
+  if (!p) return toast('Peça não encontrada.', 'err');
+  if (qtd > p.qtd) return toast(`Sem estoque suficiente. Disponível: ${p.qtd}`, 'err');
+  if (qtd < 1) return toast('Quantidade inválida.', 'err');
+  if (isNaN(receita)) return toast('Informe o valor recebido.', 'err');
+  if (isNaN(custo)) return toast('Informe o custo total.', 'err');
+
+  const lucroFinal = isNaN(lucro) ? receita - custo : lucro;
+  const novaQtd = p.qtd - qtd;
+  await setDoc(doc(db, 'pecas', id), { ...p, qtd: novaQtd });
+
+  const agora = new Date();
+  await addDoc(collection(db, 'vendas'), {
+    peca: p.nome,
+    qtd,
+    custo,
+    receita,
+    lucro: lucroFinal,
+    data: agora.toLocaleString('pt-BR'),
+    ts: agora.getTime()
+  });
+
+  toast(`Venda registrada! Lucro: ${BRL(lucroFinal)}`);
+  limparVenda();
+};
+
+window.limparVenda = function() {
+  document.getElementById('sel-peca').value = '';
+  document.getElementById('v-qtd').value = '1';
+  document.getElementById('v-receita').value = '';
+  document.getElementById('v-custo').value = '';
+  document.getElementById('v-lucro').value = '';
+  document.getElementById('venda-info').style.display = 'none';
+  document.getElementById('lucro-venda-prev').style.display = 'none';
+};
+
+// ——— CALCULAR LUCRO NO FORM ———
+window.calcLucro = function() {
+  const c = parseFloat(document.getElementById('p-custo').value) || 0;
+  const v = parseFloat(document.getElementById('p-venda').value) || 0;
+  const el = document.getElementById('lucro-prev');
+  if (!c || !v) { el.style.display = 'none'; return; }
+  const l = v - c;
+  const m = ((l / c) * 100).toFixed(1);
+  el.style.display = 'block';
+  el.textContent = `Lucro unitário: ${BRL(l)}  |  Margem: ${m}%`;
+};
+
+// ——— ADICIONAR PEÇA ———
+window.adicionarPeca = async function() {
+  const nome = document.getElementById('p-nome').value.trim();
+  const qtd = parseInt(document.getElementById('p-qtd').value) || 0;
+  const min = parseInt(document.getElementById('p-min').value) ?? 2;
+  const custo = parseFloat(document.getElementById('p-custo').value) || 0;
+  const venda = parseFloat(document.getElementById('p-venda').value) || 0;
+  if (!nome) return toast('Informe o nome da peça.', 'err');
+  if (!custo || !venda) return toast('Informe custo e preço de venda.', 'err');
+
+  const id = 'p_' + Date.now();
+  await setDoc(doc(db, 'pecas', id), { id, nome, qtd, min, custo, venda });
+  toast(`"${nome}" salvo com sucesso!`);
+  limparForm();
+};
+
+window.limparForm = function() {
+  ['p-nome','p-qtd','p-min','p-custo','p-venda'].forEach(id => {
+    const el = document.getElementById(id);
+    el.value = id === 'p-qtd' ? '0' : id === 'p-min' ? '2' : '';
+  });
+  document.getElementById('lucro-prev').style.display = 'none';
+};
+
+// ——— DELETAR PEÇA ———
+window.deletarPeca = async function(id, nome) {
+  if (!confirm(`Remover "${nome}" do estoque?`)) return;
+  await deleteDoc(doc(db, 'pecas', id));
+  toast(`"${nome}" removido.`);
+};
+
+// ——— TAXAS ML ———
+let taxas = { categoria: 0, fixo: 0, frete: 0, lucrodesejado: 0 };
+
+onSnapshot(doc(db, 'config', 'taxas_ml'), snap => {
+  if (snap.exists()) {
+    taxas = { ...taxas, ...snap.data() };
+    preencherCamposTaxas();
+    simular();
+    calcLucroVenda(); // recalcular venda se estiver aberta
+  }
+});
+
+function preencherCamposTaxas() {
+  document.getElementById('tx-categoria').value = taxas.categoria || '';
+  document.getElementById('tx-fixo').value = taxas.fixo || '';
+  document.getElementById('tx-frete').value = taxas.frete || '';
+  document.getElementById('tx-lucrodesejado').value = taxas.lucrodesejado || '';
+}
+
+window.salvarTaxas = async function() {
+  taxas = {
+    categoria: parseFloat(document.getElementById('tx-categoria').value) || 0,
+    fixo: parseFloat(document.getElementById('tx-fixo').value) || 0,
+    frete: parseFloat(document.getElementById('tx-frete').value) || 0,
+    lucrodesejado: parseFloat(document.getElementById('tx-lucrodesejado').value) || 0,
+  };
+  await setDoc(doc(db, 'config', 'taxas_ml'), taxas);
+  simular();
+};
+
+function calcTaxasML(precoVenda) {
+  const taxaCategoria = (taxas.categoria / 100) * precoVenda;
+  const fixo = taxas.fixo || 0;
+  const frete = taxas.frete || 0;
+  const totalTaxas = taxaCategoria + fixo + frete;
+  const liquido = precoVenda - totalTaxas;
+  return { taxaCategoria, fixo, frete, totalTaxas, liquido };
+}
+
+window.simular = function() {
+  const custo = parseFloat(document.getElementById('sim-custo').value) || 0;
+  const venda = parseFloat(document.getElementById('sim-venda').value) || 0;
+  const res = document.getElementById('sim-resultado');
+  if (!custo && !venda) { res.style.display = 'none'; return; }
+  res.style.display = 'block';
+
+  const { taxaCategoria, fixo, frete, totalTaxas, liquido } = calcTaxasML(venda);
+  const lucroReal = liquido - custo;
+
+  document.getElementById('sr-taxa-cat').textContent = `- ${BRL(taxaCategoria)}`;
+  document.getElementById('sr-fixo').textContent = `- ${BRL(fixo)}`;
+  document.getElementById('sr-frete').textContent = `- ${BRL(frete)}`;
+  document.getElementById('sr-total-taxas').textContent = `- ${BRL(totalTaxas)}`;
+  document.getElementById('sr-liquido').textContent = BRL(liquido);
+  const lucroEl = document.getElementById('sr-lucro');
+  lucroEl.textContent = BRL(lucroReal);
+  lucroEl.style.color = lucroReal >= 0 ? 'var(--green)' : 'var(--red)';
+
+  // verificar meta de lucro
+  const metaEl = document.getElementById('sr-meta');
+  if (taxas.lucrodesejado && custo) {
+    const lucroMeta = (taxas.lucrodesejado / 100) * custo;
+    const precoIdeal = custo + lucroMeta + totalTaxas;
+    const atingiu = lucroReal >= lucroMeta;
+    metaEl.style.display = 'block';
+    metaEl.style.background = atingiu ? 'var(--green-dim)' : 'var(--yellow-dim)';
+    metaEl.style.color = atingiu ? 'var(--green)' : 'var(--yellow)';
+    metaEl.textContent = atingiu
+      ? `✅ Meta de ${taxas.lucrodesejado}% atingida! Lucro desejado: ${BRL(lucroMeta)}`
+      : `⚠️ Abaixo da meta de ${taxas.lucrodesejado}%. Lucro desejado: ${BRL(lucroMeta)}`;
+    document.getElementById('sr-preco-ideal').textContent =
+      `💡 Preço mínimo para atingir a meta: ${BRL(precoIdeal)}`;
+  } else {
+    metaEl.style.display = 'none';
+    document.getElementById('sr-preco-ideal').textContent = '';
+  }
+};
+
+// ——— INTEGRAR TAXAS NO CÁLCULO DE VENDA ———
+// Sobrescreve calcLucroVenda para considerar taxas ML
+const _calcLucroVendaOrig = window.calcLucroVenda;
+window.calcLucroVenda = function() {
+  const receita = parseFloat(document.getElementById('v-receita').value) || 0;
+  const custo = parseFloat(document.getElementById('v-custo').value) || 0;
+  const lucroInput = document.getElementById('v-lucro');
+  const prev = document.getElementById('lucro-venda-prev');
+
+  if (receita && custo) {
+    const { totalTaxas, liquido } = calcTaxasML(receita);
+    const lucroReal = liquido - custo;
+    lucroInput.value = lucroReal.toFixed(2);
+
+    const margem = custo > 0 ? ((lucroReal / custo) * 100).toFixed(1) : 0;
+    const temTaxas = totalTaxas > 0;
+    prev.style.display = 'block';
+    prev.style.color = lucroReal >= 0 ? 'var(--green)' : 'var(--red)';
+    prev.innerHTML = `Lucro real: <strong>${BRL(lucroReal)}</strong>  |  Margem: ${margem}%`
+      + (temTaxas ? `  |  Taxas ML deduzidas: - ${BRL(totalTaxas)}` : '  <span style="color:var(--text3);font-size:11px">(configure taxas ML para dedução automática)</span>');
+  } else {
+    prev.style.display = 'none';
+  }
+};
+
+</script>
+</body>
+</html>
